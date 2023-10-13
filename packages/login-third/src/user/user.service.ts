@@ -31,7 +31,7 @@ export class UserService {
    * 新增用户
    * @param user
    */
-  async insertUser(user: Omit<User, "id">) {
+  async insertUser(user: Omit<User, "id" | "age">) {
     return this.prismaService.user.create({
       data: user,
     });

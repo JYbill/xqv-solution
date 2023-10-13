@@ -11,7 +11,8 @@ model User {
   // 字段名  类型   	类型修饰符    										属性
   id      String   @id @default(auto()) @map("_id") @db.ObjectId
   email   String   @unique
-  name    String?
+  name    String
+  age     Int?
   account String // 账号
   password String // 密码
 
