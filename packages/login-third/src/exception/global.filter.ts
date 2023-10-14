@@ -8,6 +8,8 @@ import {
 } from "@nestjs/common";
 import { Response } from "express";
 
+import { ProjectException } from "./global.expectation";
+
 /**
  * @Description: 全局异常处理器
  * @Author: 小钦var
@@ -20,6 +22,7 @@ export class GlobalExceptionFilter implements ExceptionFilter<HttpException> {
   catch(exception: HttpException, host: ArgumentsHost) {
     const ctx = host.switchToHttp();
     const response = ctx.getResponse<Response>();
+
     this.logger.error(exception.stack);
     try {
       // 正常业务代码抛出的异常

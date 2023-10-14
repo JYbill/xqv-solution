@@ -8,6 +8,7 @@ import process from "process";
 
 import { AppModule } from "./app.module";
 import { GlobalExceptionFilter } from "./exception/global.filter";
+import { ProjectExceptionFilter } from "./exception/project.filter";
 
 async function bootstrap() {
   const app = await NestFactory.create(AppModule);
@@ -18,7 +19,10 @@ async function bootstrap() {
   // 全局配置
   const globalPrefix = "api";
   app.setGlobalPrefix(globalPrefix);
-  app.useGlobalFilters(new GlobalExceptionFilter());
+  app.useGlobalFilters(
+    new GlobalExceptionFilter(),
+    new ProjectExceptionFilter()
+  );
   app.useGlobalPipes(
     new ValidationPipe({
       transform: true, // JS字面量对象转换为class

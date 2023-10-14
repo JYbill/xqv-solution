@@ -1,4 +1,5 @@
 import { UserRegister } from "../dto/user.dto";
+import { UserExistException } from "../exception/global.expectation";
 import { PrismaService } from "../prisma/prisma.service";
 import { Injectable, Scope } from "@nestjs/common";
 import type { User } from "@prisma/client";
@@ -11,7 +12,7 @@ export class UserService {
    * 获取所有用户
    */
   async findAll() {
-    return this.prismaService.user.findMany({});
+    return this.prismaService.$GlobalExt.user.findMany({});
   }
 
   /**
@@ -19,15 +20,13 @@ export class UserService {
    * @param user
    */
   async createUser(user: UserRegister) {
-    await this.prismaService.$GlobalExtends.user.findUniqueOrThrow({
-      where: {
-        email: user.email,
-      },
+    const exist = await this.prismaService.$GlobalExt.user.exit({
+      email: user.email,
     });
-    // return this.insertUser(user);
-    // const client = await this.prismaService.extendsTest();
-    // return client.user.findFirst();
-    // return this.prismaService.user.findFirst();
+    if (exist) {
+      throw new UserExistException();
+    }
+    return this.insertUser(user);
   }
 
   /**
@@ -49,7 +48,7 @@ export class UserService {
    * @param user
    */
   async insertUser(user: UserRegister) {
-    return this.prismaService.user.create({
+    return this.prismaService.$GlobalExt.user.create({
       data: user,
     });
   }
@@ -59,7 +58,7 @@ export class UserService {
    * @param uid
    */
   async delUserByID(uid: string) {
-    return this.prismaService.user.delete({
+    return this.prismaService.$GlobalExt.user.delete({
       where: {
         id: uid,
       },

@@ -50,7 +50,7 @@ export class PrismaService
     }
   }
 
-  get $GlobalExtends() {
+  get $GlobalExt() {
     if (!this.$customExtends) {
       this.$customExtends = extendsFactory(this);
     }
@@ -74,10 +74,62 @@ export class PrismaService
  */
 function extendsFactory(prisma: PrismaService) {
   const $extends = prisma.$extends({
+    name: "GlobalExtends",
+    model: {
+      $allModels: {
+        /**
+         * 根据条件查询是否存在
+         */
+        async exit<Module>(
+          this: Module,
+          where: Prisma.Args<Module, "findFirst">["where"]
+        ): Promise<boolean> {
+          const context = Prisma.getExtensionContext(this) as Module;
+          const data = await context["findFirst"]({
+            where,
+            select: { id: true },
+          });
+          return !!data;
+        },
+
+        /**
+         * 对象排除
+         * @param payload
+         * @param keys
+         */
+        exclude<T, Key extends keyof T>(payload: T, keys: Key[]): Omit<T, Key> {
+          for (const key of keys) {
+            delete payload[key];
+          }
+          return payload;
+        },
+
+        /**
+         * 数组排除
+         * @param payloadList
+         * @param keys
+         */
+        excludeAll<T, Key extends keyof T>(
+          payloadList: T[],
+          keys: Key[]
+        ): Omit<T, Key>[] {
+          for (const payload of payloadList) {
+            for (const key of keys) {
+              delete payload[key];
+            }
+          }
+          return payloadList;
+        },
+      },
+    },
     query: {
       $allModels: {
-        async $allOperations({ model, operation, args, query }) {
-          console.log(model, operation, args);
+        /**
+         * 自定义Prisma异常
+         * @param args
+         * @param query
+         */
+        async $allOperations({ args, query }) {
           try {
             return await query(args);
           } catch (err) {
@@ -86,6 +138,25 @@ function extendsFactory(prisma: PrismaService) {
               throw new DBExpectation(error.message);
             }
           }
+        },
+      },
+      user: {
+        /**
+         * 所有用户的返回值，都将"password"字段混淆
+         * @param args
+         * @param query
+         */
+        async $allOperations<T>(this: T, { args, query }) {
+          const res = (await query(args)) as T;
+
+          if (!res) return res;
+          else if (Array.isArray(res)) {
+            return res.map((user) => {
+              user.password = "**********";
+            });
+          }
+          res["password"] = "**********";
+          return res;
         },
       },
     },
