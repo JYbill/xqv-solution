@@ -6,7 +6,7 @@ import {
   HttpException,
   Logger,
 } from "@nestjs/common";
-import { Request, Response } from "express";
+import { Response } from "express";
 
 /**
  * @Description: 全局异常处理器
@@ -20,8 +20,7 @@ export class GlobalExceptionFilter implements ExceptionFilter<HttpException> {
   catch(exception: HttpException, host: ArgumentsHost) {
     const ctx = host.switchToHttp();
     const response = ctx.getResponse<Response>();
-    const request = ctx.getRequest<Request>();
-    this.logger.error(exception);
+    this.logger.error(exception.stack);
     try {
       // 正常业务代码抛出的异常
       const status = exception.getStatus();

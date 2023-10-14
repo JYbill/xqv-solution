@@ -1,14 +1,14 @@
 import { IsObjectID } from "../validator/id.validate";
 import { OmitType } from "@nestjs/mapped-types";
-import type { Prisma } from "@prisma/client";
+import type { User } from "@prisma/client";
 import { IsEmail, IsInt, IsNumber, IsString } from "class-validator";
 
 /**
  * User 完整类型
  */
-export type User = Required<Prisma.UserCreateInput>;
+export type UserType = User;
 
-export class UserDTO implements User {
+export class UserDTO implements UserType {
   @IsObjectID()
   id: string;
 
@@ -31,7 +31,4 @@ export class UserDTO implements User {
 /**
  * User注册DTO
  */
-export class UserRegister extends OmitType(UserDTO, [
-  "id",
-  "account",
-] as const) {}
+export class UserRegister extends OmitType(UserDTO, ["id"] as const) {}

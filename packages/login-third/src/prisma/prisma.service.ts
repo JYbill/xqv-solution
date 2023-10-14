@@ -3,9 +3,16 @@
  * @Author: 小钦var
  * @Date: 2023/10/9 17:07
  */
-import { Inject, Injectable, Logger, OnModuleInit } from "@nestjs/common";
-import type { Prisma } from "@prisma/client";
-import { PrismaClient } from "@prisma/client";
+import { DBExpectation } from "../exception/global.expectation";
+import {
+  Inject,
+  Injectable,
+  Logger,
+  OnModuleDestroy,
+  OnModuleInit,
+} from "@nestjs/common";
+import { Prisma, PrismaClient } from "@prisma/client";
+import { PrismaClientKnownRequestError } from "@prisma/client/runtime/library";
 
 import {
   OptionType,
@@ -16,9 +23,10 @@ import {
 @Injectable()
 export class PrismaService
   extends PrismaClient<Prisma.PrismaClientOptions, Prisma.LogLevel>
-  implements OnModuleInit
+  implements OnModuleInit, OnModuleDestroy
 {
   private readonly logger = new Logger(PrismaService.name);
+  private $customExtends: ReturnType<typeof extendsFactory>;
 
   constructor(
     @Inject(PRISMA_MODULE_INJECT_ID)
@@ -42,7 +50,45 @@ export class PrismaService
     }
   }
 
+  get $GlobalExtends() {
+    if (!this.$customExtends) {
+      this.$customExtends = extendsFactory(this);
+    }
+    return this.$customExtends;
+  }
+
   async onModuleInit() {
     await this.$connect();
+    this.logger.log("Prisma Connected");
   }
+
+  async onModuleDestroy() {
+    await this.$disconnect();
+    this.logger.log("Prisma Disconnected");
+  }
+}
+
+/**
+ * 扩展Prisma $extends 工厂函数
+ * @param prisma
+ */
+function extendsFactory(prisma: PrismaService) {
+  const $extends = prisma.$extends({
+    query: {
+      $allModels: {
+        async $allOperations({ model, operation, args, query }) {
+          console.log(model, operation, args);
+          try {
+            return await query(args);
+          } catch (err) {
+            const error = err as Error;
+            if (error instanceof PrismaClientKnownRequestError) {
+              throw new DBExpectation(error.message);
+            }
+          }
+        },
+      },
+    },
+  });
+  return $extends;
 }

@@ -1,3 +1,4 @@
+import { UserRegister } from "../dto/user.dto";
 import { PrismaService } from "../prisma/prisma.service";
 import { Injectable, Scope } from "@nestjs/common";
 import type { User } from "@prisma/client";
@@ -11,6 +12,22 @@ export class UserService {
    */
   async findAll() {
     return this.prismaService.user.findMany({});
+  }
+
+  /**
+   * 创建用户
+   * @param user
+   */
+  async createUser(user: UserRegister) {
+    await this.prismaService.$GlobalExtends.user.findUniqueOrThrow({
+      where: {
+        email: user.email,
+      },
+    });
+    // return this.insertUser(user);
+    // const client = await this.prismaService.extendsTest();
+    // return client.user.findFirst();
+    // return this.prismaService.user.findFirst();
   }
 
   /**
@@ -31,7 +48,7 @@ export class UserService {
    * 新增用户
    * @param user
    */
-  async insertUser(user: Omit<User, "id" | "age">) {
+  async insertUser(user: UserRegister) {
     return this.prismaService.user.create({
       data: user,
     });

@@ -21,6 +21,7 @@ export class UserController {
   @Post("/")
   async createUser() {
     return this.userService.insertUser({
+      age: 24,
       name: "abc",
       account: "abc",
       email: "abc@gmail.com",

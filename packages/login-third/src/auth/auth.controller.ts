@@ -10,6 +10,7 @@ export class AuthController {
 
   @Post("/register")
   async register(@Body() user: UserRegister) {
-    return ResponseUtil.success(user);
+    const userRet = await this.authService.registerUser(user);
+    return ResponseUtil.success(userRet);
   }
 }
