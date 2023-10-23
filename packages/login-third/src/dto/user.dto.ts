@@ -1,13 +1,23 @@
 import { IsObjectID } from "../validator/id.validate";
-import { OmitType } from "@nestjs/mapped-types";
+import { OmitType, PickType } from "@nestjs/mapped-types";
 import type { User } from "@prisma/client";
-import { IsEmail, IsInt, IsNumber, IsString } from "class-validator";
+import {
+  IsEmail,
+  IsNumber,
+  IsOptional,
+  IsString,
+  MaxLength,
+  MinLength,
+} from "class-validator";
 
 /**
- * User 完整类型
+ * User类型
  */
 export type UserType = User;
 
+/**
+ * 校验类：User完整的校验类
+ */
 export class UserDTO implements UserType {
   @IsObjectID()
   id: string;
@@ -24,11 +34,39 @@ export class UserDTO implements UserType {
   @IsString()
   password: string;
 
-  @IsString()
+  @MinLength(5, {
+    message: "account is too short",
+  })
+  @MaxLength(15, {
+    message: "account is too long",
+  })
   account: string;
+
+  @IsString()
+  salt: string;
 }
 
 /**
- * User注册DTO
+ * 校验类：User注册
  */
-export class UserRegister extends OmitType(UserDTO, ["id"] as const) {}
+export class UserRegister extends OmitType(UserDTO, ["id", "salt"] as const) {}
+
+/**
+ * 校验类：用户登录
+ */
+export class UserLogin extends PickType(UserDTO, [
+  "account",
+  "email",
+  "password",
+] as const) {
+  @IsOptional()
+  @IsString()
+  account: string;
+
+  @IsOptional()
+  @IsString()
+  email: string;
+
+  @IsString()
+  password: string;
+}

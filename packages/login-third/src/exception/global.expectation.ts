@@ -10,6 +10,15 @@ export class DBExpectation extends HttpException {
 }
 
 /**
+ * 数据库不存在对应数据异常
+ */
+export class NOExistException extends HttpException {
+  constructor(msg = "DB不存在数据") {
+    super(msg, 500);
+  }
+}
+
+/**
  * 项目异常类
  */
 export class ProjectException extends HttpException {}
@@ -20,5 +29,26 @@ export class ProjectException extends HttpException {}
 export class UserExistException extends ProjectException {
   constructor() {
     super("用户已存在", 400);
+  }
+}
+
+export class ParamsMissedException extends ProjectException {
+  constructor(msg = "参数缺失") {
+    super(msg, 400);
+  }
+}
+
+export class ParamsErrorException extends ProjectException {
+  constructor(msg = "参数错误") {
+    super(msg, 400);
+  }
+}
+
+/**
+ * 登录异常
+ */
+export class LoginException extends ProjectException {
+  constructor(msg = "账号密码不正确") {
+    super(msg, 400);
   }
 }

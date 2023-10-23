@@ -3,6 +3,7 @@
  * @Author: 小钦var
  * @Date: 2023/10/9 17:07
  */
+import { UserDTO } from "../dto/user.dto";
 import { DBExpectation } from "../exception/global.expectation";
 import {
   Inject,
@@ -121,6 +122,27 @@ function extendsFactory(prisma: PrismaService) {
           return payloadList;
         },
       },
+
+      user: {
+        /**
+         * 查找用户带明文密码
+         * @param where
+         * @param select
+         */
+        async findUserWithPWD<Module>(
+          this: Module,
+          where: Prisma.Args<Module, "findFirst">["where"],
+          select?: Prisma.Args<Module, "findFirst">["select"]
+        ) {
+          const context = Prisma.getExtensionContext(this) as Module;
+          const res = await context["findFirst"]({
+            where,
+            select,
+            showPWD: true,
+          });
+          return res as UserDTO;
+        },
+      },
     },
     query: {
       $allModels: {
@@ -147,15 +169,24 @@ function extendsFactory(prisma: PrismaService) {
          * @param query
          */
         async $allOperations<T>(this: T, { args, query }) {
+          // 存在"showPWD"返回真实的密码
+          if (args["showPWD"]) {
+            delete args["showPWD"];
+            return query(args);
+          }
+
+          // 过滤密码
           const res = (await query(args)) as T;
 
           if (!res) return res;
           else if (Array.isArray(res)) {
             return res.map((user) => {
               user.password = "**********";
+              delete user["salt"];
             });
           }
           res["password"] = "**********";
+          delete res["salt"];
           return res;
         },
       },

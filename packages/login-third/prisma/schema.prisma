@@ -15,6 +15,7 @@ model User {
   age      Int?
   account  String @unique // 账号
   password String // 密码
+  salt     String // 盐
 
   @@map("Users")
 }

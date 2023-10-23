@@ -1,8 +1,12 @@
-import { UserRegister } from "../dto/user.dto";
-import { UserExistException } from "../exception/global.expectation";
+import { UserType } from "../dto/user.dto";
+import {
+  NOExistException,
+  ParamsMissedException,
+  UserExistException,
+} from "../exception/global.expectation";
 import { PrismaService } from "../prisma/prisma.service";
-import { Injectable, Scope } from "@nestjs/common";
-import type { User } from "@prisma/client";
+import { Injectable } from "@nestjs/common";
+import { Prisma } from "@prisma/client";
 
 @Injectable()
 export class UserService {
@@ -16,10 +20,13 @@ export class UserService {
   }
 
   /**
-   * 创建用户
+   * 创建唯一用户
    * @param user
    */
-  async createUser(user: UserRegister) {
+  async createUser(user: UserType) {
+    if (!user.email) {
+      throw new ParamsMissedException();
+    }
     const exist = await this.prismaService.$GlobalExt.user.exit({
       email: user.email,
     });
@@ -30,11 +37,35 @@ export class UserService {
   }
 
   /**
+   * 账号/邮箱登录
+   * @param user
+   */
+  async findUserByLogin(user: UserType) {
+    const whereQuery: Prisma.UserFindFirstArgs["where"] = {};
+    if (user.email) {
+      whereQuery["email"] = user.email;
+    } else if (user.account) {
+      whereQuery["account"] = user.account;
+    } else {
+      throw new ParamsMissedException("未填入账号或邮箱错误!");
+    }
+
+    const res = await this.prismaService.$GlobalExt.user.findUserWithPWD(
+      whereQuery
+    );
+
+    if (!res) {
+      throw new NOExistException();
+    }
+    return res;
+  }
+
+  /**
    * 更新用户通过ID
    * @param id uid
    * @param user
    */
-  async updUserById(id: string, user: Partial<User>) {
+  async updUserById(id: string, user: UserType) {
     return this.prismaService.user.update({
       where: {
         id,
@@ -47,7 +78,7 @@ export class UserService {
    * 新增用户
    * @param user
    */
-  async insertUser(user: UserRegister) {
+  async insertUser(user: UserType) {
     return this.prismaService.$GlobalExt.user.create({
       data: user,
     });

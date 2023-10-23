@@ -34,15 +34,6 @@ import { UserModule } from "./user/user.module";
         };
       },
     }),
-    JwtModule.registerAsync({
-      useFactory: async (configService: ConfigService<IEnv>) => {
-        return {
-          secret: configService.get("JWT_SECRET"),
-          signOptions: { expiresIn: "60s" },
-        };
-      },
-      inject: [ConfigService],
-    }),
     AuthModule,
     UserModule,
   ],

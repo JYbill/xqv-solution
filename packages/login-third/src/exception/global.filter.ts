@@ -5,6 +5,7 @@ import {
   ExceptionFilter,
   HttpException,
   Logger,
+  NotFoundException,
 } from "@nestjs/common";
 import { Response } from "express";
 
@@ -27,7 +28,11 @@ export class GlobalExceptionFilter implements ExceptionFilter<HttpException> {
     try {
       // 正常业务代码抛出的异常
       const status = exception.getStatus();
-      response.status(status).json(ResponseUtil.error(undefined, status));
+      if (exception instanceof NotFoundException) {
+        response.status(status).json(ResponseUtil.error("接口未找到", status));
+      } else {
+        response.status(status).json(ResponseUtil.error(undefined, status));
+      }
     } catch (err: unknown) {
       const error = err as Error;
       // 代码错误
