@@ -1,5 +1,6 @@
 import { UserType } from "../dto/user.dto";
 import {
+  LoginException,
   NOExistException,
   ParamsMissedException,
   UserExistException,
@@ -55,9 +56,21 @@ export class UserService {
     );
 
     if (!res) {
-      throw new NOExistException();
+      throw new LoginException();
     }
     return res;
+  }
+
+  /**
+   * 根据id查User
+   * @param uid
+   */
+  async findUserByID(uid: string): Promise<UserType> {
+    return this.prismaService.$GlobalExt.user.findUnique({
+      where: {
+        id: uid,
+      },
+    });
   }
 
   /**

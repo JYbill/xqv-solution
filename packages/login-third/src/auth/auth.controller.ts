@@ -26,7 +26,7 @@ export class AuthController {
     if (!user.email && !user.account) {
       throw new ParamsMissedException();
     }
-    const token = await this.authService.accountLogin(user);
-    return ResponseUtil.success(token);
+    const accessToken = await this.authService.accountLogin(user);
+    return ResponseUtil.success({ accessToken });
   }
 }
