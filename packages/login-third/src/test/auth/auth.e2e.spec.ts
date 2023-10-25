@@ -8,6 +8,7 @@ describe("Auth", () => {
   let app: INestApplication;
   let userService: UserService;
   let testUid: string;
+  let testAccessToken: string;
 
   beforeAll(async () => {
     const moduleRef = await Test.createTestingModule({
@@ -68,7 +69,44 @@ describe("Auth", () => {
       })
       .expect((res: request.Response) => {
         const body = res.body;
-        if (res.statusCode !== 201 || body.code !== 1 || !body["data"]) {
+        testAccessToken = `Bearer ${body["data"]["accessToken"]}`;
+        if (res.statusCode !== 201 || body.code !== 1 || !testAccessToken) {
+          console.log(res.error);
+          throw new TypeError("不符合要求，请检查代码");
+        }
+      });
+  });
+
+  /**
+   * 登出逻辑功能 ✅
+   */
+  it(`/POST /auth/logout`, async () => {
+    return request(app.getHttpServer())
+      .delete("/auth/logout")
+      .set({
+        Authorization: testAccessToken,
+      })
+      .expect((res: request.Response) => {
+        const body = res.body;
+        if (res.statusCode !== 200 || body.code !== 1) {
+          console.log(res.error);
+          throw new TypeError("不符合要求，请检查代码");
+        }
+      });
+  });
+
+  /**
+   * 测试JWT失效无法正常访问接口 ✅
+   */
+  it("/GET /user/self", async () => {
+    return request(app.getHttpServer())
+      .get("/user/self")
+      .set({
+        Authorization: testAccessToken,
+      })
+      .expect((res: request.Response) => {
+        const body = res.body;
+        if (res.statusCode !== 400 || body.code !== 0) {
           console.log(res.error);
           throw new TypeError("不符合要求，请检查代码");
         }
@@ -80,7 +118,7 @@ describe("Auth", () => {
    */
   afterAll(async () => {
     const delUser = await userService.delUserByID(testUid);
-    console.log("debug 删除用户", delUser); // debug
+    console.log("debug 删除用户结果：", delUser); // debug
     await app.close();
   });
 });

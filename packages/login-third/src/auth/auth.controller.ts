@@ -4,7 +4,8 @@ import {
   ParamsMissedException,
 } from "../exception/global.expectation";
 import { ResponseUtil } from "../util/response.util";
-import { Body, Controller, Post } from "@nestjs/common";
+import { Body, Controller, Delete, Post, Req } from "@nestjs/common";
+import { Request } from "express";
 
 import { AuthService } from "./auth.service";
 
@@ -28,5 +29,12 @@ export class AuthController {
     }
     const accessToken = await this.authService.accountLogin(user);
     return ResponseUtil.success({ accessToken });
+  }
+
+  // TIP允许条件：JWT有效时间内、用户是登录状态下
+  @Delete("/logout")
+  async logout(@Req() req: Request) {
+    await this.authService.logout(req.user.userID);
+    return ResponseUtil.success(null, "登出成功");
   }
 }

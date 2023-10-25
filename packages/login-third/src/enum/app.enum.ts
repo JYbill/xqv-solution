@@ -11,3 +11,10 @@ export enum RedisNameSpace {
 export enum RedisKey {
   USER = "user:",
 }
+
+/**
+ * 账号登录类型
+ */
+export enum AccountType {
+  ACCOUNT = 1,
+}

@@ -4,7 +4,7 @@ import { ResponseUtil } from "../util/response.util";
 import { Injectable } from "@nestjs/common";
 import { ConfigService } from "@nestjs/config";
 import { NextFunction, Request, Response } from "express";
-import { JsonWebTokenError } from "jsonwebtoken";
+import { JsonWebTokenError, TokenExpiredError } from "jsonwebtoken";
 import passport from "passport";
 import { Strategy as JWTStrategy, VerifiedCallback } from "passport-jwt";
 
@@ -25,6 +25,9 @@ export default class VerifyMiddleware {
         {
           // 1. 获取Token的方法
           jwtFromRequest: (req: Request) => {
+            if (!req.headers["authorization"].includes("Bearer ")) {
+              return null;
+            }
             // 这里可以自定义，但是返回的结果一定是JWT，否则passport-jwt进行校验，失败则抛出异常
             return req.headers["authorization"].split("Bearer ")[1];
           },
@@ -44,7 +47,10 @@ export default class VerifyMiddleware {
           // 校验是否与redis中的accessToken一致
           const accessToken = req.headers["authorization"].split("Bearer ")[1];
           const loginInfo = await this.memoService.getLoginInfo(payload.userID);
-          if (loginInfo.accessToken !== accessToken) {
+          if (!loginInfo) {
+            done(new JsonWebTokenError("用户已登出"), null);
+            return;
+          } else if (loginInfo.accessToken !== accessToken) {
             done(new JsonWebTokenError("JWT非最新"), null);
             return;
           }

@@ -58,3 +58,9 @@ export class LoginException extends ProjectException {
     super(msg, 400);
   }
 }
+
+export class LogoutException extends ProjectException {
+  constructor(msg = "退出失败") {
+    super(msg, 400);
+  }
+}

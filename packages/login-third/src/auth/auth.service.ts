@@ -41,8 +41,18 @@ export class AuthService {
     }
 
     const token = await this.createJWT(res);
-    await this.memoService.storageLoginInfo(res, token);
+    const payload = this.jwtService.decode(token) as IPayload;
+    const expire = payload.exp - payload.iat;
+    await this.memoService.storageLoginInfo(res, token, expire);
     return token;
+  }
+
+  /**
+   * 退出登录：清理redis登录信息
+   * @param uid
+   */
+  async logout(uid: string) {
+    return this.memoService.delStorageByUid(uid);
   }
 
   /**
