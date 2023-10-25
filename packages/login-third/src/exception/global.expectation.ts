@@ -9,6 +9,12 @@ export class DBExpectation extends HttpException {
   }
 }
 
+export class RedisExpectation extends HttpException {
+  constructor(msg = "Redis异常") {
+    super(msg, 500);
+  }
+}
+
 /**
  * 数据库不存在对应数据异常
  */

@@ -7,6 +7,8 @@ declare interface IEnv {
   URL: string;
   DATABASE_URL: string;
   JWT_SECRET: string; // JWT 密钥
+  REDIS_URL: string;
+  REDIS_PWD: string;
 }
 
 declare interface IPayload {

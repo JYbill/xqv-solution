@@ -1,21 +1,18 @@
 import { UserDTO, UserLogin, UserRegister, UserType } from "../dto/user.dto";
 import { LoginException } from "../exception/global.expectation";
+import { MemoService } from "../memo/memo.service";
 import { UserService } from "../user/user.service";
 import { Injectable } from "@nestjs/common";
 import { JwtService } from "@nestjs/jwt";
 import { JwtSignOptions } from "@nestjs/jwt/dist/interfaces/jwt-module-options.interface";
 import CryptoJS from "crypto-js";
 
-/**
- * 哈希化密码函数返回值
- */
-type HashPWDFuncType = { salt: string; pwdHash: string };
-
 @Injectable()
 export class AuthService {
   constructor(
-    private userService: UserService,
-    private jwtService: JwtService
+    private readonly userService: UserService,
+    private readonly jwtService: JwtService,
+    private readonly memoService: MemoService
   ) {}
 
   /**
@@ -44,6 +41,7 @@ export class AuthService {
     }
 
     const token = await this.createJWT(res);
+    await this.memoService.storageLoginInfo(res, token);
     return token;
   }
 

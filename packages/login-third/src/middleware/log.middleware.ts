@@ -16,7 +16,7 @@ export default class LoggerMiddleware {
     res.on("finish", () => {
       const date = format(new Date(), "yyyy-MM-dd HH:mm:ss");
       const method = req.method;
-      const uri = req.url;
+      const uri = req.originalUrl;
       const spend = Date.now() - start;
       this.logger.log(`[${method}] ${date} URI=${uri} spend=${spend}ms`);
     });

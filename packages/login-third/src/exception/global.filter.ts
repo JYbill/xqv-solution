@@ -9,8 +9,6 @@ import {
 } from "@nestjs/common";
 import { Response } from "express";
 
-import { ProjectException } from "./global.expectation";
-
 /**
  * @Description: 全局异常处理器
  * @Author: 小钦var
