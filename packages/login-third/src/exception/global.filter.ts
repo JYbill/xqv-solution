@@ -22,6 +22,7 @@ export class GlobalExceptionFilter implements ExceptionFilter<HttpException> {
     const ctx = host.switchToHttp();
     const response = ctx.getResponse<Response>();
 
+    console.log(exception);
     this.logger.error(exception.stack);
     try {
       // 正常业务代码抛出的异常

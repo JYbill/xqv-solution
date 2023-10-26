@@ -1,12 +1,10 @@
-import { RedisModule } from "@liaoliaots/nestjs-redis";
 import { MiddlewareConsumer, Module } from "@nestjs/common";
-import { ConfigModule, ConfigService } from "@nestjs/config";
+import { ConfigModule } from "@nestjs/config";
 import { Prisma } from "@prisma/client";
 import process from "process";
 
 import { AuthModule } from "./auth/auth.module";
 import { validateConfig } from "./config/config.validate";
-import { RedisNameSpace } from "./enum/app.enum";
 import { MemoModule } from "./memo/memo.module";
 import LoggerMiddleware from "./middleware/log.middleware";
 import VerifyMiddleware from "./middleware/verify.middleware";

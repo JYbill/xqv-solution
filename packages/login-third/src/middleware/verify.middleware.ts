@@ -36,8 +36,11 @@ export default class VerifyMiddleware {
           passReqToCallback: true, // 钩子传入Request参数
         },
 
-        // 2. 合法JWT Token钩子（此时代表jwt是成功的，可以自己进行二次其他的校验）
-        // > TIP: 因为这里的控制权由callback：done函数决定，所以可以使用async/await函数，只需要在完成或找到异常时调用done方法即可
+        // 2. 此策略的校验钩子（此时代表jwt是成功的，可以自己进行二次其他的校验）
+        // TIP:
+        // 同步：抛出异常回掉用passport.error()方法，该方法会触发下面的authCallback()。
+        // 异步：控制权全凭我们调用done()
+        // ⚠️ 在authCallback回调函数存在的情况下。本质上调用done相当于调用passport.success() -> authCallback()，抛出异常相当于调用passport.error() -> authCallback()
         async (req: Request, payload: IPayload, done: VerifiedCallback) => {
           if (!payload.userID || !payload.email || !payload.exp) {
             done(new JsonWebTokenError("伪造JWT"), null);
@@ -48,14 +51,14 @@ export default class VerifyMiddleware {
           const accessToken = req.headers["authorization"].split("Bearer ")[1];
           const loginInfo = await this.memoService.getLoginInfo(payload.userID);
           if (!loginInfo) {
-            done(new JsonWebTokenError("用户已登出"), null);
+            done(null, null, { message: "用户已登出" });
             return;
           } else if (loginInfo.accessToken !== accessToken) {
-            done(new JsonWebTokenError("JWT非最新"), null);
+            done(null, null, { message: "JWT非最新" });
             return;
           }
 
-          // 一致、合法、安全的JWT
+          // 此处调用passport.success()的回调函数，即下面的`authCallback()`
           done(null, payload);
         }
       )
@@ -63,20 +66,25 @@ export default class VerifyMiddleware {
   }
 
   use(req: Request, res: Response, next: NextFunction) {
-    const verifyFn = passport.authenticate(
+    passport.authenticate(
       "jwt",
+      {
+        failureMessage: true,
+      },
 
       /**
-       * 3.
-       * - Strategy校验通过后，掉用done()，会执行该钩子
-       * - Strategy校验钩子内抛出异常，则会掉用该钩子（同步代码下）
-       * @param err 当Strategy校验通过后的钩子如果抛出了异常，此时err存在
-       * @param user payload
-       * @param info 可能是错误，也可能是成功信息（由第三方Strategy、以及自定第2步校验完成的钩子决定）
+       * 3. 认证完成回调
+       * @param err 异常/错误（失败）
+       * @param user payload（成功）
+       * @param info 失败信息（失败）
        */
-      (err: Error, user: IPayload, info: Error) => {
+      function authCallback(
+        err: Error,
+        user: IPayload,
+        info: { message: string }
+      ) {
         // 错误处理
-        const forbidden = err || info instanceof Error;
+        const forbidden = err || info;
         if (forbidden) {
           let tip = "";
           if (info) {
@@ -92,7 +100,6 @@ export default class VerifyMiddleware {
         req.user = user;
         next();
       }
-    );
-    verifyFn(req, res, next);
+    )(req, res, next);
   }
 }

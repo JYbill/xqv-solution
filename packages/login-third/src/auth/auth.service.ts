@@ -82,6 +82,9 @@ export class AuthService {
     // 校验token是否合法、且存在登录状态
     const uid = accessPayload.userID;
     const loginInfo = await this.memoService.getLoginInfo(uid);
+    if (!loginInfo) {
+      throw new LoginException("账号已登出");
+    }
     if (
       accessToken !== loginInfo.accessToken ||
       refreshToken !== loginInfo.refreshToken
