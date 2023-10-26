@@ -2,16 +2,29 @@ import { UserLogin, UserRegister } from "../dto/user.dto";
 import {
   ParamsErrorException,
   ParamsMissedException,
+  TokenException,
 } from "../exception/global.expectation";
 import { ResponseUtil } from "../util/response.util";
-import { Body, Controller, Delete, Post, Req } from "@nestjs/common";
+import {
+  Body,
+  Controller,
+  Delete,
+  Headers,
+  Post,
+  Put,
+  Req,
+} from "@nestjs/common";
+import { JwtService } from "@nestjs/jwt";
 import { Request } from "express";
 
 import { AuthService } from "./auth.service";
 
 @Controller("/auth")
 export class AuthController {
-  constructor(private readonly authService: AuthService) {}
+  constructor(
+    private readonly authService: AuthService,
+    private readonly jwtService: JwtService
+  ) {}
 
   @Post("/register")
   async register(@Body() user: UserRegister) {
@@ -27,8 +40,8 @@ export class AuthController {
     if (!user.email && !user.account) {
       throw new ParamsMissedException();
     }
-    const accessToken = await this.authService.accountLogin(user);
-    return ResponseUtil.success({ accessToken });
+    const data = await this.authService.accountLogin(user);
+    return ResponseUtil.success(data);
   }
 
   // TIP允许条件：JWT有效时间内、用户是登录状态下
@@ -36,5 +49,28 @@ export class AuthController {
   async logout(@Req() req: Request) {
     await this.authService.logout(req.user.userID);
     return ResponseUtil.success(null, "登出成功");
+  }
+
+  @Put("/refresh")
+  async refreshJWTToken(
+    @Headers("authorization") authHead: string,
+    @Body("refreshToken") refreshToken: string
+  ) {
+    // 非Token
+    if (
+      !authHead.startsWith("Bearer ") ||
+      !refreshToken.startsWith("Refresh ")
+    ) {
+      throw new ParamsMissedException();
+    }
+
+    // 解码token
+    const accessToken = authHead.split("Bearer ")[1];
+    const freshToken = refreshToken.split("Refresh ")[1];
+    const nestData = await this.authService.refreshAllToken(
+      accessToken,
+      freshToken
+    );
+    return ResponseUtil.success(nestData, "刷新成功");
   }
 }

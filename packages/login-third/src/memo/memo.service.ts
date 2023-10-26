@@ -1,6 +1,10 @@
 import { UserType } from "../dto/user.dto";
 import { AccountType, RedisKey, RedisNameSpace } from "../enum/app.enum";
-import { LogoutException } from "../exception/global.expectation";
+import {
+  DBExpectation,
+  LogoutException,
+  RedisExpectation,
+} from "../exception/global.expectation";
 import { RedisService } from "@liaoliaots/nestjs-redis";
 import { Injectable } from "@nestjs/common";
 import Redis from "ioredis";
@@ -9,8 +13,9 @@ export interface LoginInfo extends Record<string, string | number> {
   email: string;
   account: string;
   accessToken: string;
+  refreshToken: string;
   type: AccountType;
-  loginStamp: number;
+  updateStamp: number;
 }
 
 @Injectable()
@@ -36,10 +41,16 @@ export class MemoService {
   /**
    * 存储登录信息
    * @param user
-   * @param accessToken
+   * @param accessToken 认证令牌
+   * @param refreshToken 刷新令牌
    * @param expire 过期时间(s)
    */
-  async storageLoginInfo(user: UserType, accessToken: string, expire: number) {
+  async storageLoginInfo(
+    user: UserType,
+    accessToken: string,
+    refreshToken: string,
+    expire: number
+  ) {
     const redisKey = RedisKey.USER + user.id;
     await this.redisClient0
       .pipeline()
@@ -47,11 +58,37 @@ export class MemoService {
         email: user.email,
         account: user.account,
         accessToken,
+        refreshToken,
         type: AccountType.ACCOUNT,
-        loginStamp: Date.now(),
+        updateStamp: Date.now(),
       })
       .expire(redisKey, expire)
       .exec();
+  }
+
+  /**
+   * 更新登录信息
+   * @param uid
+   * @param info
+   */
+  async updLoginInfo(
+    uid: string,
+    info: Pick<LoginInfo, "accessToken" | "refreshToken">
+  ) {
+    const redisKey = RedisKey.USER + uid;
+    const pipe = this.redisClient0
+      .pipeline()
+      .hset(redisKey, "updateStamp", Date.now())
+      .hset(redisKey, "accessToken", info.accessToken);
+    if (info.refreshToken) {
+      pipe.hset(redisKey, "refreshToken", info.refreshToken);
+    }
+    const resList = await pipe.exec();
+    for (const [err] of resList) {
+      if (err) {
+        throw new RedisExpectation();
+      }
+    }
   }
 
   /**

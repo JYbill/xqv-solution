@@ -64,3 +64,12 @@ export class LogoutException extends ProjectException {
     super(msg, 400);
   }
 }
+
+/**
+ * JWT Token异常
+ */
+export class TokenException extends ProjectException {
+  constructor(msg = "请勿伪造不合法的JWT Token") {
+    super(msg, 400);
+  }
+}

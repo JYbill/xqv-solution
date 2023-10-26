@@ -9,6 +9,7 @@ describe("Auth", () => {
   let userService: UserService;
   let testUid: string;
   let testAccessToken: string;
+  let testRefreshToken: string;
 
   beforeAll(async () => {
     const moduleRef = await Test.createTestingModule({
@@ -70,9 +71,36 @@ describe("Auth", () => {
       .expect((res: request.Response) => {
         const body = res.body;
         testAccessToken = `Bearer ${body["data"]["accessToken"]}`;
+        testRefreshToken = `Refresh ${body["data"]["refreshToken"]}`;
         if (res.statusCode !== 201 || body.code !== 1 || !testAccessToken) {
           console.log(res.error);
           throw new TypeError("不符合要求，请检查代码");
+        }
+      });
+  });
+
+  /**
+   * 测试刷新Token ⚠️
+   */
+  it("/PUT /auth/refresh", async () => {
+    return request(app.getHttpServer())
+      .put("/auth/refresh")
+      .set({
+        Authorization: testAccessToken,
+      })
+      .send({
+        refreshToken: testRefreshToken,
+      })
+      .expect((res: request.Response) => {
+        const body = res.body;
+        if (res.statusCode !== 200 || body.code !== 1) {
+          console.error(res.error);
+          throw new TypeError("不符合要求，请检查代码");
+        }
+        testAccessToken = `Bearer ${body["data"]["accessToken"]}`;
+        const refreshToken = `Refresh ${body["data"]["refreshToken"]}`;
+        if (refreshToken) {
+          testRefreshToken = refreshToken;
         }
       });
   });
@@ -118,7 +146,7 @@ describe("Auth", () => {
    */
   afterAll(async () => {
     const delUser = await userService.delUserByID(testUid);
-    console.log("debug 删除用户结果：", delUser); // debug
+    console.log("删除用户结果：", delUser); // debug
     await app.close();
   });
 });

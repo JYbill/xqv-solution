@@ -26,6 +26,10 @@ class EnvConfig implements IEnv {
   @Expose()
   @IsString()
   REDIS_URL: string;
+
+  @Expose()
+  @IsString()
+  REFRESH_EXPIRE: string;
 }
 
 export function validateConfig(config: Record<string, unknown>) {

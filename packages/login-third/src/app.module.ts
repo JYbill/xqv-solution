@@ -21,6 +21,11 @@ import { UserModule } from "./user/user.module";
       isGlobal: true,
       cache: true,
       expandVariables: true,
+      load: [
+        () => ({
+          REFRESH_EXPIRE: "7d",
+        }),
+      ],
       validate: validateConfig,
     }),
     PrismaModule.forRootAsync({
@@ -48,7 +53,7 @@ export class AppModule {
   async configure(consumer: MiddlewareConsumer) {
     consumer
       .apply(LoggerMiddleware, VerifyMiddleware)
-      .exclude("/auth/register", "/auth/login")
+      .exclude("/auth/register", "/auth/login", "/auth/refresh")
       .forRoutes("*");
   }
 }

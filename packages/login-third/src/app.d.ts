@@ -9,6 +9,7 @@ declare interface IEnv {
   JWT_SECRET: string; // JWT 密钥
   REDIS_URL: string;
   REDIS_PWD: string;
+  REFRESH_EXPIRE: string; // 刷新token
 }
 
 declare interface IPayload {
@@ -17,6 +18,8 @@ declare interface IPayload {
   iat: number; // 创建时间(s)
   exp: number; // 失效时间(s)
 }
+
+declare type IRefreshPayload = Omit<IPayload, "email">;
 
 /**
  * 扩展Request.user类型
