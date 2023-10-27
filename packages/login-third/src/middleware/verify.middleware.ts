@@ -79,7 +79,7 @@ export default class VerifyMiddleware {
     passport.authenticate(
       "jwt",
       {
-        session: true,
+        session: false,
       },
       // 3. 认证完成回调
       function authCallback(
