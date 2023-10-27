@@ -26,6 +26,7 @@ declare type IRefreshPayload = Omit<IPayload, "email">;
  */
 declare namespace Express {
   export interface Request {
-    user: IPayload | undefined;
+    user?: IPayload;
+    pass?: boolean;
   }
 }

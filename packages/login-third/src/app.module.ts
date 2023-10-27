@@ -49,8 +49,11 @@ import { UserModule } from "./user/user.module";
 })
 export class AppModule {
   async configure(consumer: MiddlewareConsumer) {
+    consumer.apply().forRoutes("*");
     consumer
-      .apply(LoggerMiddleware, VerifyMiddleware)
+      .apply(LoggerMiddleware)
+      .forRoutes("*")
+      .apply(VerifyMiddleware)
       .exclude("/auth/register", "/auth/login", "/auth/refresh")
       .forRoutes("*");
   }

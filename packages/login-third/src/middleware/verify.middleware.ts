@@ -1,10 +1,10 @@
-import { ParamsErrorException } from "../exception/global.expectation";
+import { TokenException } from "../exception/global.expectation";
 import { MemoService } from "../memo/memo.service";
 import { ResponseUtil } from "../util/response.util";
 import { Injectable } from "@nestjs/common";
 import { ConfigService } from "@nestjs/config";
 import { NextFunction, Request, Response } from "express";
-import { JsonWebTokenError, TokenExpiredError } from "jsonwebtoken";
+import { JsonWebTokenError } from "jsonwebtoken";
 import passport from "passport";
 import { Strategy as JWTStrategy, VerifiedCallback } from "passport-jwt";
 
@@ -19,6 +19,15 @@ export default class VerifyMiddleware {
     private readonly configService: ConfigService,
     private readonly memoService: MemoService
   ) {
+    passport.serializeUser(function (user, cb) {
+      console.log("serializeUser");
+      cb(null, user);
+    });
+
+    passport.deserializeUser(function (user, cb) {
+      console.log("deserializeUser");
+      cb(null, user);
+    });
     passport.use(
       "jwt",
       new JWTStrategy(
@@ -29,6 +38,7 @@ export default class VerifyMiddleware {
               return null;
             }
             // 这里可以自定义，但是返回的结果一定是JWT，否则passport-jwt进行校验，失败则抛出异常
+            // 抛出异常就会执行passport.fail() -> 下一个策略，没有时调用认证回调函数()
             return req.headers["authorization"].split("Bearer ")[1];
           },
           ignoreExpiration: false,
@@ -36,11 +46,11 @@ export default class VerifyMiddleware {
           passReqToCallback: true, // 钩子传入Request参数
         },
 
-        // 2. 此策略的校验钩子（此时代表jwt是成功的，可以自己进行二次其他的校验）
+        // 2. 此策略的校验钩子（此时代表jwt校验是成功的，可以自己进行二次其他的校验）
         // TIP:
-        // 同步：抛出异常回掉用passport.error()方法，该方法会触发下面的authCallback()。
-        // 异步：控制权全凭我们调用done()
-        // ⚠️ 在authCallback回调函数存在的情况下。本质上调用done相当于调用passport.success() -> authCallback()，抛出异常相当于调用passport.error() -> authCallback()
+        // 这里最好写同步写法，不要async/await，因为passport-jwt中并未对异步做支持，要用异步就用Promise
+        // done(err) -> passport.error() -> 认证回调()
+        // done(null, payload) -> passport.success() -> 认证回调()
         async (req: Request, payload: IPayload, done: VerifiedCallback) => {
           if (!payload.userID || !payload.email || !payload.exp) {
             done(new JsonWebTokenError("伪造JWT"), null);
@@ -69,15 +79,9 @@ export default class VerifyMiddleware {
     passport.authenticate(
       "jwt",
       {
-        failureMessage: true,
+        session: true,
       },
-
-      /**
-       * 3. 认证完成回调
-       * @param err 异常/错误（失败）
-       * @param user payload（成功）
-       * @param info 失败信息（失败）
-       */
+      // 3. 认证完成回调
       function authCallback(
         err: Error,
         user: IPayload,
@@ -86,6 +90,7 @@ export default class VerifyMiddleware {
         // 错误处理
         const forbidden = err || info;
         if (forbidden) {
+          req.pass = false;
           let tip = "";
           if (info) {
             tip = info.message;
@@ -97,8 +102,11 @@ export default class VerifyMiddleware {
         }
 
         // 执行下一个中间件
-        req.user = user;
-        next();
+        req.logIn(user, { session: false }, (err: Error) => {
+          if (err) throw new TokenException(err.message);
+          req.pass = true;
+          next();
+        });
       }
     )(req, res, next);
   }

@@ -18,7 +18,13 @@ export default class LoggerMiddleware {
       const method = req.method;
       const uri = req.originalUrl;
       const spend = Date.now() - start;
-      this.logger.log(`[${method}] ${date} URI=${uri} spend=${spend}ms`);
+      let logMessage = `[${method}] ${date} URI=${uri} spend=${spend}ms pass=${
+        req.pass !== false
+      }`;
+      if (req.isAuthenticated?.()) {
+        logMessage = `${req.user.userID} ` + logMessage;
+      }
+      this.logger.log(logMessage);
     });
     next();
   }

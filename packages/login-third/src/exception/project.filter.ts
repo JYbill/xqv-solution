@@ -6,7 +6,7 @@ import {
   HttpException,
   Logger,
 } from "@nestjs/common";
-import { Response } from "express";
+import { Request, Response } from "express";
 
 import { ProjectException } from "./global.expectation";
 
@@ -21,8 +21,10 @@ export class ProjectExceptionFilter implements ExceptionFilter<HttpException> {
 
   catch(exception: ProjectException, host: ArgumentsHost) {
     const ctx = host.switchToHttp();
+    const request = ctx.getRequest<Request>();
     const response = ctx.getResponse<Response>();
 
+    request.pass = false;
     this.logger.error(exception.message);
     const status = exception.getStatus();
     response.status(status).json(ResponseUtil.error(exception.message, status));
