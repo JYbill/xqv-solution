@@ -4,12 +4,11 @@
   "plugins": ["@nx"],
   "overrides": [
     {
-      "files": ["*.ts", "*.tsx", "*.js", "*.jsx"],
+      "files": ["*.ts", "*.tsx", "*.js", "*.jsx", "*.vue"],
       "rules": {
         "@nx/enforce-module-boundaries": [
           "error",
           {
-            // 允许".prisma"包的引入写法
             "allow": [".prisma"],
             "enforceBuildableLibDependency": true,
             "depConstraints": [

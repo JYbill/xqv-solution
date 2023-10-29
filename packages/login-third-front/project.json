@@ -1,0 +1,66 @@
+{
+  "name": "login-third-front",
+  "$schema": "../../node_modules/nx/schemas/project-schema.json",
+  "projectType": "application",
+  "sourceRoot": "packages/login-third-front/src",
+  "targets": {
+    "lint": {
+      "executor": "@nx/eslint:lint",
+      "outputs": ["{options.outputFile}"],
+      "options": {
+        "lintFilePatterns": [
+          "packages/login-third-front/**/*.{ts,tsx,js,jsx,vue}"
+        ]
+      }
+    },
+    "build": {
+      "executor": "@nx/vite:build",
+      "outputs": ["{options.outputPath}"],
+      "defaultConfiguration": "production",
+      "options": {
+        "outputPath": "dist/packages/login-third-front",
+        "skipTypeCheck": true
+      },
+      "configurations": {
+        "development": {
+          "mode": "development"
+        },
+        "production": {
+          "mode": "production"
+        }
+      }
+    },
+    "serve": {
+      "executor": "@nx/vite:dev-server",
+      "defaultConfiguration": "development",
+      "options": {
+        "buildTarget": "login-third-front:build"
+      },
+      "configurations": {
+        "development": {
+          "buildTarget": "login-third-front:build:development",
+          "hmr": true
+        },
+        "production": {
+          "buildTarget": "login-third-front:build:production",
+          "hmr": false
+        }
+      }
+    },
+    "preview": {
+      "executor": "@nx/vite:preview-server",
+      "defaultConfiguration": "development",
+      "options": {
+        "buildTarget": "login-third-front:build"
+      },
+      "configurations": {
+        "development": {
+          "buildTarget": "login-third-front:build:development"
+        },
+        "production": {
+          "buildTarget": "login-third-front:build:production"
+        }
+      }
+    }
+  }
+}
