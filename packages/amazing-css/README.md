@@ -367,3 +367,4 @@ html.dark::view-transition-new(isDark) {
 1. [使用全新的View Transitions API](https://juejin.cn/post/7207810396420325413)
 2. [MDN: View Transitions API](https://developer.mozilla.org/zh-CN/docs/Web/API/View_Transitions_API)
 3. [Github View Transition 代码](https://github.com/JYbill/xqv-solution/blob/main/packages/amazing-css/src/views/view-transition/ViewTransitionPage2.vue)
+4. [Github：项目地址](https://github.com/JYbill/xqv-solution/tree/main/packages/amazing-css)
