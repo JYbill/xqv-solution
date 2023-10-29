@@ -361,6 +361,10 @@ html.dark::view-transition-new(isDark) {
 ```
 
 
+## 总结
+
+1. View Transition适合new视图与old视图`过渡`场景，常用于SPA(单页面富应用)、MAP(多页面SSR)
+2. 兼容性：Chrome v111+
 
 ## 引用
 
