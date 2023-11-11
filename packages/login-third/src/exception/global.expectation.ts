@@ -73,3 +73,12 @@ export class TokenException extends ProjectException {
     super(msg, 400);
   }
 }
+
+/**
+ * 第三方认证授权异常
+ */
+export class OAuth2Exception extends ProjectException {
+  constructor(msg = "第三方服务认证授权异常") {
+    super(msg, 403);
+  }
+}

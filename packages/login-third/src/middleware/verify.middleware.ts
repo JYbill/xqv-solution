@@ -19,15 +19,6 @@ export default class VerifyMiddleware {
     private readonly configService: ConfigService,
     private readonly memoService: MemoService
   ) {
-    passport.serializeUser(function (user, cb) {
-      console.log("serializeUser");
-      cb(null, user);
-    });
-
-    passport.deserializeUser(function (user, cb) {
-      console.log("deserializeUser");
-      cb(null, user);
-    });
     passport.use(
       "jwt",
       new JWTStrategy(

@@ -30,6 +30,14 @@ class EnvConfig implements IEnv {
   @Expose()
   @IsString()
   REFRESH_EXPIRE: string;
+
+  @Expose()
+  @IsString()
+  SESSION_KEY: string;
+
+  @Expose()
+  @IsString()
+  SESSION_SECRET: string;
 }
 
 export function validateConfig(config: Record<string, unknown>) {

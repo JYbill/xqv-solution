@@ -1,4 +1,13 @@
 /**
+ * Provider名称
+ */
+export enum Provider {
+  REDIS = "REDIS",
+  REDIS_SESSION = "REDIS_SESSION",
+  GOT = "GOT",
+}
+
+/**
  * Redis 命名空间
  */
 export enum RedisNameSpace {
@@ -9,7 +18,7 @@ export enum RedisNameSpace {
  * Redis Key
  */
 export enum RedisKey {
-  USER = "user:",
+  USER = "frog:user:",
 }
 
 /**

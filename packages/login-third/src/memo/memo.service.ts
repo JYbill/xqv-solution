@@ -1,12 +1,16 @@
 import { UserType } from "../dto/user.dto";
-import { AccountType, RedisKey, RedisNameSpace } from "../enum/app.enum";
 import {
-  DBExpectation,
+  AccountType,
+  Provider,
+  RedisKey,
+  RedisNameSpace,
+} from "../enum/app.enum";
+import {
   LogoutException,
   RedisExpectation,
 } from "../exception/global.expectation";
 import { RedisService } from "@liaoliaots/nestjs-redis";
-import { Injectable } from "@nestjs/common";
+import { Inject, Injectable } from "@nestjs/common";
 import Redis from "ioredis";
 
 export interface LoginInfo extends Record<string, string | number> {
@@ -20,11 +24,7 @@ export interface LoginInfo extends Record<string, string | number> {
 
 @Injectable()
 export class MemoService {
-  readonly redisClient0: Redis;
-
-  constructor(private readonly redisService: RedisService) {
-    this.redisClient0 = this.redisService.getClient(RedisNameSpace.REDIS_0);
-  }
+  constructor(@Inject(Provider.REDIS) private readonly redisClient0: Redis) {}
 
   /**
    * 根据uid获取登录信息
