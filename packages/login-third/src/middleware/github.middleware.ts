@@ -1,6 +1,6 @@
 import { Provider } from "../enum/app.enum";
 import { OAuth2Exception } from "../exception/global.expectation";
-import { Inject, Injectable, Logger } from "@nestjs/common";
+import { HttpException, Inject, Injectable, Logger } from "@nestjs/common";
 import { ConfigService } from "@nestjs/config";
 import { NextFunction, Request, Response } from "express";
 import passport from "passport";
@@ -17,7 +17,7 @@ export default class GithubMiddleware {
   private readonly logger = new Logger(GithubMiddleware.name);
 
   constructor(
-    private readonly configService: ConfigService,
+    private readonly configService: ConfigService<IEnv>,
     @Inject(Provider.GOT) private readonly gotService: GotType
   ) {
     OAuth2Strategy.prototype.userProfile = function (
@@ -28,12 +28,12 @@ export default class GithubMiddleware {
       const headers = {
         Authorization: `Bearer ${accessToken}`,
       };
-      done(null, {});
+      done(null, { name: "xqv" });
     };
     const strategy = new OAuth2Strategy(
       {
-        clientID: "ad47db868839c9a3f685",
-        clientSecret: "54a22de682b8c998e2f67a3033e0b3313d20573f",
+        clientID: this.configService.get("GITHUB_CLIENT_ID"),
+        clientSecret: this.configService.get("GITHUB_SECRET"),
         authorizationURL: "https://github.com/login/oauth/authorize",
         tokenURL: "https://github.com/login/oauth/access_token",
         callbackURL: "http://localhost:3000/api/auth/github",
@@ -52,8 +52,10 @@ export default class GithubMiddleware {
       "githubOAuth2.0",
       { session: false },
       (err: Error, user: IPayload, info: { message: string }) => {
-        req.session.destroy((err) => {
-          console.log("delete current Session", err);
+        req.session.destroy((err: Error) => {
+          if (err) {
+            throw new HttpException(err.message, 500);
+          }
         });
         if (err) {
           this.logger.error(err.message);

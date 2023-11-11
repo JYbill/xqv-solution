@@ -15,6 +15,10 @@ declare global {
     REFRESH_EXPIRE: string; // 刷新token
     SESSION_SECRET: string; // session security
     SESSION_KEY: string; // session key
+
+    // GitHub OAuth2.0
+    GITHUB_CLIENT_ID: string;
+    GITHUB_SECRET: string;
   }
 
   interface IPayload {

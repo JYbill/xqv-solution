@@ -38,6 +38,14 @@ class EnvConfig implements IEnv {
   @Expose()
   @IsString()
   SESSION_SECRET: string;
+
+  @Expose()
+  @IsString()
+  GITHUB_CLIENT_ID: string;
+
+  @Expose()
+  @IsString()
+  GITHUB_SECRET: string;
 }
 
 export function validateConfig(config: Record<string, unknown>) {

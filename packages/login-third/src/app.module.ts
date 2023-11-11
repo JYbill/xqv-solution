@@ -96,7 +96,7 @@ export class AppModule {
     consumer.apply(LoggerMiddleware).forRoutes("*");
     consumer
       .apply(VerifyMiddleware)
-      .exclude("auth/register", "auth/login")
+      .exclude("auth/register", "auth/login", "auth/github")
       .forRoutes("*", "auth/logout", "auth/refresh");
     consumer
       .apply(
