@@ -41,6 +41,7 @@ export default class GithubMiddleware {
         state: true,
       },
       function (req, accessToken, refreshToken, results, profile, verified) {
+        console.log("strategy callback", profile);
         verified(null, results);
       }
     );
@@ -66,6 +67,7 @@ export default class GithubMiddleware {
           this.logger.error(info.message);
           return next(new OAuth2Exception(info.message));
         }
+
         res.clearCookie("connect.sid");
         res.json({ code: 0, msg: user });
       }
