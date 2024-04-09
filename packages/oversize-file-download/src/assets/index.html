@@ -1,0 +1,101 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+  <meta charset="UTF-8">
+  <title>超大文件下载HTTP range方案</title>
+</head>
+<body>
+  <button class="download">下载超大文件</button>
+
+  <script src="https://cdn.jsdelivr.net/npm/streamsaver@2.0.6/StreamSaver.min.js"></script>
+  <script>
+    class OversizeFileDownloader {
+      url;
+      limitSize;
+      constructor(url, limitSize = 1024 * 1024 * 1024) {
+        if (!url) {
+          throw TypeError("url is must")
+        }
+        this.url = url;
+        this.limitSize = limitSize; // 默认1G
+      }
+
+      /**
+       * 下载核心处理
+       * @returns {Promise<void>}
+       */
+      async downloadCore() {
+        console.log("start downloading");
+
+        const res = await this.downloadFile();
+        const { filename, fileTotalSize } = res;
+        let {res: _response, reader} = res;
+        const fileStream = streamSaver.createWriteStream(filename, { size: fileTotalSize })
+        const writer = fileStream.getWriter();
+        let bufferPos = 0;
+        let done = false;
+
+        while (bufferPos < fileTotalSize) {
+          while (!done) {
+            const bufferRes = await reader.read();
+            const buffer = bufferRes.value;
+            done = bufferRes.done;
+            if (!done) {
+              await writer.ready.then(async () => {
+                await writer.write(buffer);
+                bufferPos += buffer.length;
+                console.log("progress", (bufferPos / fileTotalSize * 100).toFixed(2) + "%");
+              })
+            }
+          }
+          const retryRes = await this.downloadFile(bufferPos);
+          reader = retryRes.reader;
+          done = false;
+        }
+        writer.ready.then(() => {
+          writer.close();
+        })
+        writer.closed.then(() => {
+          console.log("✅ 下载完毕");
+        })
+      }
+
+      /**
+       * HTTP Range下载文件二进制
+       * @param startPos
+       * @returns {Promise<{res: Response, filename: string, size: number, reader: ReadableStreamDefaultReader<R>, fileTotalSize: number, contentLength: number}>}
+       */
+      async downloadFile(startPos = 0) {
+        const endPos = this.limitSize + startPos;
+        const res = await fetch(this.url, {
+          method: "GET",
+          headers: {
+            'Range': `bytes=${startPos}-${endPos}`
+          }
+        })
+        let contentDisposition = res.headers.get("Content-Disposition");
+        contentDisposition = contentDisposition.split("filename=")[1];
+        contentDisposition = contentDisposition.replaceAll(`"`, '');
+        const size = Number(res.headers.get("Content-Length"));
+        const fileTotalSize = Number(res.headers.get('File-Total-Size'));
+        const contentLength = Number(res.headers.get('Content-Length'));
+        return {
+          res,
+          reader: res.body.getReader(),
+          filename: contentDisposition,
+          size,
+          fileTotalSize,
+          contentLength
+        };
+      }
+    }
+  </script>
+  <script>
+    const btn = document.querySelector(".download");
+    const downloader = new OversizeFileDownloader("/api/");
+    btn.addEventListener("click", () => {
+      downloader.downloadCore();
+    })
+  </script>
+</body>
+</html>

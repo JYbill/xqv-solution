@@ -3,6 +3,7 @@
 - 仓库介绍：使用Nx管理`monorepo`仓库
 - 运行示例
 ```shell
+npm i -g nx@latest
 npm i
 nx serve [应用场景包名]
 nx serve web-print
