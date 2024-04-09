@@ -12,12 +12,24 @@
     class OversizeFileDownloader {
       url;
       limitSize;
-      constructor(url, limitSize = 1024 * 1024 * 1024) {
+      processHandler; // 进度钩子
+
+      // 下面数据结束后需要重置
+      isDownload = false; // 是否正在下载
+      fileTotalSize = 0; // 总二进制大小（字节）
+      filename = ""; // 文件名
+      bufferPos = 0; // 已下载字节大小
+      constructor(url, processHandler, limitSize = 1024 * 1024 * 1024) {
         if (!url) {
           throw TypeError("url is must")
         }
         this.url = url;
         this.limitSize = limitSize; // 默认1G
+        if (!processHandler) {
+          this.processHandler = function() {
+            console.log("progress", (this.bufferPos / this.fileTotalSize * 100).toFixed(2) + "%");
+          }
+        }
       }
 
       /**
@@ -25,17 +37,25 @@
        * @returns {Promise<void>}
        */
       async downloadCore() {
-        console.log("start downloading");
+        if (this.isDownload) {
+          console.warn("downloader is running, pls wait 'isDownload = false'");
+          return;
+        }
+        this.isDownload = true;
+        console.log("😄 start downloading");
 
         const res = await this.downloadFile();
-        const { filename, fileTotalSize } = res;
-        let {res: _response, reader} = res;
-        const fileStream = streamSaver.createWriteStream(filename, { size: fileTotalSize })
+        this.filename = res.filename;
+        this.fileTotalSize = res.fileTotalSize;
+        let {reader} = res;
+        const fileStream = streamSaver.createWriteStream(this.filename, { size: this.fileTotalSize })
         const writer = fileStream.getWriter();
-        let bufferPos = 0;
-        let done = false;
 
-        while (bufferPos < fileTotalSize) {
+        // 分片循环下载
+        while (this.bufferPos < this.fileTotalSize) {
+          let done = false; // 本次HTTP range是否写入完毕
+
+          // 循环读取二进制并写入writeable stream
           while (!done) {
             const bufferRes = await reader.read();
             const buffer = bufferRes.value;
@@ -43,21 +63,30 @@
             if (!done) {
               await writer.ready.then(async () => {
                 await writer.write(buffer);
-                bufferPos += buffer.length;
-                console.log("progress", (bufferPos / fileTotalSize * 100).toFixed(2) + "%");
+                this.bufferPos += buffer.length;
+                this.processHandler.call(this);
               })
             }
           }
-          const retryRes = await this.downloadFile(bufferPos);
+
+          // 获取下一个range范围的二进制流
+          const retryRes = await this.downloadFile(this.bufferPos);
           reader = retryRes.reader;
-          done = false;
         }
         writer.ready.then(() => {
           writer.close();
         })
         writer.closed.then(() => {
           console.log("✅ 下载完毕");
+          this.resetState();
         })
+      }
+
+      resetState() {
+        this.isDownload = false;
+        this.fileTotalSize = 0;
+        this.filename = "";
+        this.bufferPos = 0;
       }
 
       /**

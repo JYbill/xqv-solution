@@ -18,10 +18,7 @@ export class AppController {
     const startPos = Number(start);
     const endPos = Number(end) > fileSize ? fileSize : Number(end);
     console.log(startPos, endPos);
-    const file = createReadStream(filePath, {
-      start: startPos,
-      end: endPos || undefined,
-    });
+    const file = createReadStream(filePath, { start: startPos, end: endPos || undefined });
 
     res.set({
       'Content-Type': 'video/mp4',
