@@ -1,0 +1,64 @@
+{
+  "name": "oversize-file-download",
+  "$schema": "../../node_modules/nx/schemas/project-schema.json",
+  "sourceRoot": "packages/oversize-file-download/src",
+  "projectType": "application",
+  "targets": {
+    "build": {
+      "executor": "@nx/webpack:webpack",
+      "outputs": ["{options.outputPath}"],
+      "defaultConfiguration": "production",
+      "options": {
+        "target": "node",
+        "compiler": "tsc",
+        "outputPath": "dist/packages/oversize-file-download",
+        "main": "packages/oversize-file-download/src/main.ts",
+        "tsConfig": "packages/oversize-file-download/tsconfig.app.json",
+        "assets": ["packages/oversize-file-download/src/assets"],
+        "isolatedConfig": true,
+        "webpackConfig": "packages/oversize-file-download/webpack.config.js"
+      },
+      "configurations": {
+        "development": {},
+        "production": {}
+      }
+    },
+    "serve": {
+      "executor": "@nx/js:node",
+      "defaultConfiguration": "development",
+      "options": {
+        "buildTarget": "oversize-file-download:build"
+      },
+      "configurations": {
+        "development": {
+          "buildTarget": "oversize-file-download:build:development"
+        },
+        "production": {
+          "buildTarget": "oversize-file-download:build:production"
+        }
+      }
+    },
+    "lint": {
+      "executor": "@nx/eslint:lint",
+      "outputs": ["{options.outputFile}"],
+      "options": {
+        "lintFilePatterns": ["packages/oversize-file-download/**/*.ts"]
+      }
+    },
+    "test": {
+      "executor": "@nx/jest:jest",
+      "outputs": ["{workspaceRoot}/coverage/{projectRoot}"],
+      "options": {
+        "jestConfig": "packages/oversize-file-download/jest.config.ts",
+        "passWithNoTests": true
+      },
+      "configurations": {
+        "ci": {
+          "ci": true,
+          "codeCoverage": true
+        }
+      }
+    }
+  },
+  "tags": []
+}

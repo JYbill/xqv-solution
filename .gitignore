@@ -39,3 +39,7 @@ testem.log
 Thumbs.db
 
 .nx
+
+*.mp4
+*.mp3
+*.mov
