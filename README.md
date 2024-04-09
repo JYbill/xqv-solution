@@ -12,3 +12,4 @@ nx serve web-print
 - [web-print: web打印场景通过iframe实现局部DOM打印（特别针对于每页固定页眉页脚场景）](./packages/web-print/README.md)
 - [cookie具有独立分区状态(CHIPS)](./packages/cookie3th/README.md)
 - [神奇的CSS](./packages/amazing-css/README.md)
+- [学习web stream和超大文件下载方案](./packages/oversize-file-download/README.md)
