@@ -3,7 +3,7 @@ import { FactoryProvider } from "@nestjs/common/interfaces/modules/provider.inte
 import { ConfigService } from "@nestjs/config";
 
 async function gotLoader() {
-  const { got } = await import(/*webpackIgnore: true*/ "got");
+  const got = await import(/*webpackIgnore: true*/ "got");
   return got;
 }
 

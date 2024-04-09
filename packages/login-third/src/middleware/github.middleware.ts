@@ -1,5 +1,6 @@
 import { Provider } from "../enum/app.enum";
 import { OAuth2Exception } from "../exception/global.expectation";
+import { RetGotType } from "../global/http-client.provider";
 import { HttpException, Inject, Injectable, Logger } from "@nestjs/common";
 import { ConfigService } from "@nestjs/config";
 import { NextFunction, Request, Response } from "express";
@@ -18,17 +19,22 @@ export default class GithubMiddleware {
 
   constructor(
     private readonly configService: ConfigService<IEnv>,
-    @Inject(Provider.GOT) private readonly gotService: GotType
+    @Inject(Provider.GOT) private readonly gotService: RetGotType
   ) {
     OAuth2Strategy.prototype.userProfile = function (
       accessToken: string,
-      done: (err: Error | null, profile: object | null) => void
+      done: (err: Error | null, profile: UserGithub | null) => void
     ) {
-      // TODO: 利用认证令牌获取用户基础信息, GET https://api.github.com/user
-      const headers = {
-        Authorization: `Bearer ${accessToken}`,
-      };
-      done(null, { name: "xqv" });
+      gotService
+        .got("https://api.github.com/user", {
+          headers: {
+            Authorization: `Bearer ${accessToken}`,
+          },
+        })
+        .json()
+        .then((res: UserGithub) => {
+          done(null, res);
+        });
     };
     const strategy = new OAuth2Strategy(
       {
@@ -40,9 +46,17 @@ export default class GithubMiddleware {
         passReqToCallback: true,
         state: true,
       },
-      function (req, accessToken, refreshToken, results, profile, verified) {
-        console.log("strategy callback", profile);
-        verified(null, results);
+      function (
+        _req: Request,
+        accessToken: string,
+        _refreshToken: string | undefined,
+        results,
+        profile: UserGithub,
+        verified
+      ) {
+        profile.tokenType = results["token_type"];
+        profile.accessToken = accessToken;
+        verified(null, profile);
       }
     );
     passport.use("githubOAuth2.0", strategy);
@@ -52,12 +66,7 @@ export default class GithubMiddleware {
     passport.authenticate(
       "githubOAuth2.0",
       { session: false },
-      (err: Error, user: IPayload, info: { message: string }) => {
-        req.session.destroy((err: Error) => {
-          if (err) {
-            throw new HttpException(err.message, 500);
-          }
-        });
+      (err: Error, user: UserGithub, info: { message: string }) => {
         if (err) {
           this.logger.error(err.message);
           return next(new OAuth2Exception("认证失败，请重新发起认证授权"));
@@ -68,8 +77,16 @@ export default class GithubMiddleware {
           return next(new OAuth2Exception(info.message));
         }
 
+        // 清理操作
         res.clearCookie("connect.sid");
-        res.json({ code: 0, msg: user });
+        req.session.destroy((err: Error) => {
+          if (err) {
+            throw new HttpException(err.message, 500);
+          }
+          // GitHub登录成功逻辑
+          req.github = user;
+          next();
+        });
       }
     )(req, res, next);
   }

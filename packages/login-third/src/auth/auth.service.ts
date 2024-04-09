@@ -1,3 +1,4 @@
+import { GithubType } from "../dto/github.dto";
 import { UserDTO, UserLogin, UserRegister, UserType } from "../dto/user.dto";
 import {
   LoginException,
@@ -178,5 +179,14 @@ export class AuthService {
       outputLength: 256,
     }).toString();
     return pwdHash;
+  }
+
+  /**
+   * 临时保存Github用户在Redis
+   * @param github
+   * @private
+   */
+  private async tempGithub(github: GithubType) {
+    // 存入Redis
   }
 }

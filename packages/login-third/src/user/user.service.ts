@@ -1,3 +1,4 @@
+import { GithubType } from "../dto/github.dto";
 import { UserType } from "../dto/user.dto";
 import {
   LoginException,
@@ -106,6 +107,20 @@ export class UserService {
       where: {
         id: uid,
       },
+    });
+  }
+
+  /**
+   * 根据GithubID查找并更新or创建 Github数据
+   * @param github
+   */
+  async findAndUpdGithub(github: GithubType) {
+    return this.prismaService.github.upsert({
+      where: {
+        githubID: github.githubID,
+      },
+      update: github,
+      create: github,
     });
   }
 }

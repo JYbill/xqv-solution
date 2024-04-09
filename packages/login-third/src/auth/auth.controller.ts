@@ -1,3 +1,4 @@
+import { GithubType } from "../dto/github.dto";
 import { UserLogin, UserRegister } from "../dto/user.dto";
 import {
   ParamsErrorException,
@@ -9,13 +10,15 @@ import {
   Body,
   Controller,
   Delete,
+  Get,
   Headers,
   Post,
   Put,
   Req,
+  Res,
 } from "@nestjs/common";
 import { JwtService } from "@nestjs/jwt";
-import { Request } from "express";
+import { Request, Response } from "express";
 
 import { AuthService } from "./auth.service";
 
@@ -72,5 +75,31 @@ export class AuthController {
       freshToken
     );
     return ResponseUtil.success(nestData, "刷新成功");
+  }
+
+  @Get("/github")
+  async githubLogin(@Req() req: Request, @Res() res: Response) {
+    const github = req.github;
+    const githubModel: Omit<GithubType, "id"> = {
+      username: github.login,
+      githubID: github.id,
+      avatarURL: github.avatar_url,
+      homepageURL: github.html_url,
+      followers: github.followers,
+      following: github.following,
+      type: github.type,
+      company: github.company,
+      blog: github.blog,
+      location: github.location,
+      email: github.email,
+      bio: github.bio,
+      publicRepos: github.public_repos,
+      createdAt: github.created_at,
+      updatedAt: github.updated_at,
+      tokenType: github.tokenType,
+      accessToken: github.accessToken,
+    };
+
+    res.end("ok");
   }
 }

@@ -3,6 +3,7 @@ import { OmitType, PickType } from "@nestjs/mapped-types";
 import type { User } from "@prisma/client";
 import {
   IsEmail,
+  IsInt,
   IsNumber,
   IsOptional,
   IsString,
@@ -44,6 +45,9 @@ export class UserDTO implements UserType {
 
   @IsString()
   salt: string;
+
+  @IsInt()
+  githubUID: number;
 }
 
 /**

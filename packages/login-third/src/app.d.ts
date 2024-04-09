@@ -37,6 +37,7 @@ declare global {
     export interface Request {
       user?: IPayload;
       pass?: boolean;
+      github?: UserGithub;
     }
   }
 
@@ -44,4 +45,28 @@ declare global {
    * 读取Got(ESM模块)类型声明文件
    */
   type GotType = RetGotType;
+
+  interface UserGithub {
+    login: string; // 用户名
+    id: number;
+    avatar_url: string; // 头像URL
+    url: string; // 开发查询地址URL(可直接访问)
+    html_url: string; // 首页地址
+    followers: number; // 粉丝用户总数
+    following: number; // 关注用户总数
+    followers_url: string; // 粉丝用户列表URL
+    following_url: string; // 关注用户列表URL
+    type: string; // 角色类型："User"
+    name: string; // 用户名
+    company: string; // 公司
+    blog: string; // 博客
+    location: string; // 地址
+    email: string; // 邮箱
+    bio: string; // 个人简介
+    public_repos: number; // 开放仓库总数
+    created_at: string; // 创建日期（日期字符串）
+    updated_at: string; // 更新日期
+    tokenType: string; // token类型
+    accessToken?: string; // 认证令牌
+  }
 }
