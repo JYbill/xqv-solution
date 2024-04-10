@@ -328,45 +328,62 @@ Content-Disposition: attachment; filename=test.mp4,
 ```ts
 // 核心代码
 class OversizeFileDownloader {
-  url;
-  limitSize;
-  processHandler; // 进度钩子
-
-  // 下面数据结束后需要重置
-  isDownload = false; // 是否正在下载
-  fileTotalSize = 0; // 总二进制大小（字节）
-  filename = ""; // 文件名
-  bufferPos = 0; // 已下载字节大小
-  constructor(url, processHandler, limitSize = 1024 * 1024 * 1024) {
-    if (!url) {
-      throw TypeError("url is must")
-    }
-    this.url = url;
-    this.limitSize = limitSize; // 默认1G
-    if (!processHandler) {
-      this.processHandler = function() {
-        console.log("progress", (this.bufferPos / this.fileTotalSize * 100).toFixed(2) + "%");
-      }
-    }
-  }
-
   /**
-   * 下载核心处理
-   * @returns {Promise<void>}
+   * 静态资源下载启动器
    */
-  async downloadCore() {
+  async downloadAssetsStater() {
     if (this.isDownload) {
       console.warn("downloader is running, pls wait 'isDownload = false'");
       return;
     }
     this.isDownload = true;
-    console.log("😄 start downloading");
 
-    const res = await this.downloadFile();
-    this.filename = res.filename;
-    this.fileTotalSize = res.fileTotalSize;
-    let {reader} = res;
-    const fileStream = streamSaver.createWriteStream(this.filename, { size: this.fileTotalSize })
+    this.fileTotalSize = await this.getAssetsSize(); // 静态资源总大小
+    const res = await this.downloadAssetFile();
+    await this.pipeToFile(res.reader, this.downloadAssetFile);
+  }
+
+  /**
+   * 以静态资源环境下下载
+   */
+  async getAssetsSize() {
+    const fileInfoRes = await fetch(this.url, {
+      method: "HEAD"
+    });
+    const headers = fileInfoRes.headers;
+    const fileSize = headers.get("Content-Length");
+    return Number(fileSize);
+  }
+
+  async downloadAssetFile(startPos = 0) {
+    const endPos = this.limitSize + startPos;
+    const res = await fetch(this.url, {
+      method: "GET",
+      headers: {
+        "Range": `bytes=${startPos}-${endPos}`
+      }
+    });
+    const headers = res.headers;
+    const size = Number(headers.get("Content-Length"));
+    const reader = res.body.getReader();
+    const result = {
+      res,
+      reader,
+      size
+    };
+    return result;
+  }
+
+  /**
+   * readableStream 写入 writeableStream核心处理，采用背压机制
+   * @param reader readable Reader
+   * @param downloadFunc 下载函数
+   * @private
+   */
+  async pipeToFile(reader, downloadFunc) {
+    const fileStream = streamSaver.createWriteStream(this.downloadFilename, {
+      size: this.fileTotalSize
+    });
     const writer = fileStream.getWriter();
 
     // 分片循环下载
@@ -382,58 +399,30 @@ class OversizeFileDownloader {
           await writer.ready.then(async () => {
             await writer.write(buffer);
             this.bufferPos += buffer.length;
-            this.processHandler.call(this);
-          })
+
+            // 500ms间隔执行一次钩子（简单防抖）
+            if (performance.now() - this.processLastTime >= 500) {
+              this.processHandler.call(this);
+              this.processLastTime = performance.now();
+            }
+          });
         }
       }
 
-      // 获取下一个range范围的二进制流
-      const retryRes = await this.downloadFile(this.bufferPos);
-      reader = retryRes.reader;
+      if (this.bufferPos < this.fileTotalSize) {
+        // 获取下一个range范围的二进制流
+        const retryRes = await downloadFunc.call(this, this.bufferPos);
+        reader = retryRes.reader;
+      }
     }
-    writer.ready.then(() => {
+    await writer.ready.then(() => {
       writer.close();
-    })
-    writer.closed.then(() => {
+    });
+    await writer.closed.then(() => {
+      this.processHandler.call(this);
       console.log("✅ 下载完毕");
       this.resetState();
-    })
-  }
-
-  resetState() {
-    this.isDownload = false;
-    this.fileTotalSize = 0;
-    this.filename = "";
-    this.bufferPos = 0;
-  }
-
-  /**
-   * HTTP Range下载文件二进制
-   * @param startPos
-   * @returns {Promise<{res: Response, filename: string, size: number, reader: ReadableStreamDefaultReader<R>, fileTotalSize: number, contentLength: number}>}
-   */
-  async downloadFile(startPos = 0) {
-    const endPos = this.limitSize + startPos;
-    const res = await fetch(this.url, {
-      method: "GET",
-      headers: {
-        'Range': `bytes=${startPos}-${endPos}`
-      }
-    })
-    let contentDisposition = res.headers.get("Content-Disposition");
-    contentDisposition = contentDisposition.split("filename=")[1];
-    contentDisposition = contentDisposition.replaceAll(`"`, '');
-    const size = Number(res.headers.get("Content-Length"));
-    const fileTotalSize = Number(res.headers.get('File-Total-Size'));
-    const contentLength = Number(res.headers.get('Content-Length'));
-    return {
-      res,
-      reader: res.body.getReader(),
-      filename: contentDisposition,
-      size,
-      fileTotalSize,
-      contentLength
-    };
+    });
   }
 }
 ```
@@ -442,33 +431,60 @@ class OversizeFileDownloader {
 // 后台: nest.js
 @Controller()
 export class AppController {
+  @Head('/')
+  downloadOversizeFileInfo(@Res({ passthrough: true }) res: Response) {
+    const filePath = "C:\\Users\\Administrator\\Downloads\\test.mp4"; // 替换成具体的视频文件
+    const fileSize = fs.statSync(filePath).size;
+    res.set({
+      'Content-Length': fileSize,
+      'Access-Control-Expose-Headers': 'Content-Length',
+    });
+  }
 
-  @Get()
+  @Get('/')
   downloadOversizeFile(
     @Req() req: Request,
     @Res({ passthrough: true }) res: Response,
-  ): StreamableFile {
-    const filePath = "C:\\Users\\Administrator\\Downloads\\9G.mp4"; // 替换成具体的视频文件
+  ) {
+    const filePath = "C:\\Users\\Administrator\\Downloads\\test.mp4"; // 替换成具体的视频文件
     const fileSize = fs.statSync(filePath).size;
     const range = req.headers.range.split('=')[1];
     const [start, end] = range.split('-');
     const startPos = Number(start);
-    const endPos = Number(end) > fileSize ? fileSize : Number(end);
-    console.log(startPos, endPos);
-    const file = createReadStream(filePath, { start: startPos, end: endPos || undefined });
 
+    if (startPos > fileSize) {
+      // 越界
+      throw new HttpException(
+        'REQUESTED_RANGE_NOT_SATISFIABLE',
+        HttpStatus.REQUESTED_RANGE_NOT_SATISFIABLE,
+      );
+    }
+
+    let endPos: number;
+    if (end === '') {
+      // 未指定接受，默认即为总字节长度
+      endPos = fileSize;
+    } else if (Number(end) > fileSize) {
+      // 超过文件总大小，endPos即为总字节大小
+      endPos = fileSize;
+    } else {
+      endPos = Number(end);
+    }
+    console.log('debug chunk size', startPos, endPos);
+    const file = createReadStream(filePath, {
+      start: startPos,
+      end: endPos,
+    });
     res.set({
       'Content-Type': 'video/mp4',
       'Content-Length': endPos - startPos,
-      'Content-Disposition': `attachment; filename="${Date.now()}.mp4"`,
-      'File-Total-Size': fileSize,
-      'Access-Control-Expose-Headers': 'Content-Disposition, File-Total-Size',
     });
     return new StreamableFile(file);
   }
 }
-
 ```
+
+> 代码较长，建议直接去GitHub仓库阅读源码
 
 > github仓库地址
 >
